@@ -9,6 +9,5 @@ args=parser.parse_args()
 
 for image in args.image:
     print 'Fetching image: ' + image
-    image_path = args.cache_dir + '/' +  image.replace('/', '-').replace(':', '_') + '.tar'
-    os.system('docker load < %s || true' % (image_path))
-    os.system('(docker pull %s | grep \'Image is up to date\') || docker save %s > %s' % (image, image, image_path))
+    image_file = args.cache_dir + '/' +  image.replace('/', '-').replace(':', '_') + '.tar'
+    os.system('docker load < %s || (docker pull %s | grep \'Image is up to date\') || docker save %s > %s' % (image_file, image, image, image_file))
