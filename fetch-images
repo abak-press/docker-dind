@@ -8,6 +8,5 @@ parser.add_argument('--cache-dir', default = '/images')
 args=parser.parse_args()
 
 for image in args.image:
-    print 'Fetching image: ' + image
     image_file = args.cache_dir + '/' +  image.replace('/', '-').replace(':', '_') + '.tar'
-    os.system('docker load < %s || (docker pull %s | grep \'Image is up to date\') || docker save %s > %s' % (image_file, image, image, image_file))
+    os.system('docker load < %s || (docker pull %s && docker save %s > %s)' % (image_file, image, image, image_file))
