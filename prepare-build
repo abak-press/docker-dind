@@ -1,6 +1,6 @@
 #!/bin/sh -ex
 
-wrapdocker docker -v
+docker -v
 
 if ! git merge-base --is-ancestor ${DRONE_COMMIT} HEAD; then
   echo "The commit ${DRONE_COMMIT} has not been found in HEAD."

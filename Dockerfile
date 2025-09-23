@@ -1,4 +1,6 @@
-FROM gitlab/dind
+FROM docker:dind
+
+RUN apk add --no-cache python3 py3-pip
 
 ARG DIP_VERSION=3.8.3
 
