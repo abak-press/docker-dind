@@ -1,12 +1,30 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import argparse
-import os
+import subprocess
+from pathlib import Path
+
+
+def run(cmd):
+    subprocess.run(cmd, check=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--image', action = 'append')
-parser.add_argument('--cache-dir', default = '/images')
-args=parser.parse_args()
+parser.add_argument("--image", action="append", required=True)
+parser.add_argument("--cache-dir", default="/images")
+args = parser.parse_args()
+
+cache_dir = Path(args.cache_dir)
+cache_dir.mkdir(parents=True, exist_ok=True)
 
 for image in args.image:
-    image_file = args.cache_dir + '/' +  image.replace('/', '-').replace(':', '_') + '.tar'
-    os.system('docker load < %s || (docker pull %s && docker save %s > %s)' % (image_file, image, image, image_file))
+    image_file = cache_dir / f"{image.replace('/', '-').replace(':', '_')}.tar"
+    if image_file.exists():
+        try:
+            with image_file.open("rb") as fh:
+                subprocess.run(["docker", "load"], stdin=fh, check=True)
+            continue
+        except subprocess.CalledProcessError:
+            image_file.unlink(missing_ok=True)
+
+    run(["docker", "pull", image])
+    with image_file.open("wb") as fh:
+        subprocess.run(["docker", "save", image], stdout=fh, check=True)
