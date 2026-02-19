@@ -1,8 +1,42 @@
-#!/bin/sh -ex
+#!/bin/sh
+set -eu
+
+# Docker may fail on hosts without CONFIG_IP_NF_RAW / iptables raw table.
+# Allow startup in this environment (can be overridden externally with 0).
+: "${DOCKER_INSECURE_NO_IPTABLES_RAW:=1}"
+export DOCKER_INSECURE_NO_IPTABLES_RAW
+
+# Start Docker daemon in background
+dockerd-entrypoint.sh &
+dockerd_pid=$!
+
+cleanup() {
+  if kill -0 "${dockerd_pid}" >/dev/null 2>&1; then
+    kill "${dockerd_pid}" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup INT TERM
+
+# Wait until daemon becomes ready
+timeout="${DOCKERD_STARTUP_TIMEOUT:-45}"
+while [ $timeout -gt 0 ]; do
+  if docker info >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+  timeout=$((timeout - 1))
+done
+
+if [ "$timeout" -eq 0 ]; then
+  echo "Docker daemon did not become ready in time."
+  exit 1
+fi
 
 docker -v
 
-if ! git merge-base --is-ancestor ${DRONE_COMMIT} HEAD; then
+: "${DRONE_COMMIT:?DRONE_COMMIT env var must be set}"
+
+if ! git merge-base --is-ancestor "${DRONE_COMMIT}" HEAD; then
   echo "The commit ${DRONE_COMMIT} has not been found in HEAD."
   echo "Try to restart a build or open a new pull-request."
   exit 1
